@@ -1,0 +1,73 @@
+- hosts: cli
+  vars:
+          - svc: "docker"
+          - image: "httpd"
+  tasks:
+          - name: Creating repo for docker
+            yum_repository:
+                  name: "{{ svc }}"
+                  description: "{{ svc }}"
+                  baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
+                  gpgcheck: no
+            register: yum
+
+          - name: Installing docker-ce
+            package:
+                  name:  "docker-ce-3:18.09.1-3.el7"
+                  state: present
+            register: pkg
+            when: yum.failed == false
+
+          - name: Starting docker service
+            service:
+                  name:  "{{ svc }}"
+                  state: started
+            register: ser
+            when: pkg.failed == false
+
+          - name: Copying webpage to host sys
+            copy:
+                src: "test.html"
+                dest: "/var/www/html"
+            register: cp
+            ignore_errors: true
+
+          - name: Installing docker-py
+            pip:
+                  name: "docker-py"
+                  state: present
+            register: pip       
+            when: ser.failed == false
+
+          - name: Pulling docker image
+            docker_image:
+                  name: "{{ image }}"
+                  source: pull
+            register: img
+            when: pip.failed == false
+
+          - name: Launching docker container
+            docker_container:
+                  name: server
+                  image: "{{ image }}"
+                  volumes:
+                          - "/var/www/html/:/usr/local/apache2/htdocs/"
+                  exposed_ports:
+                          - 80
+                  published_ports:
+                          - "8081:80"
+            register: cont
+            when: img.failed == false
+
+          - debug:
+                  var: yum  
+          - debug:
+                  var: pkg
+          - debug:        
+                  var: ser
+          - debug:
+                  var: pip        
+          - debug:        
+                  var: img
+          - debug:        
+                  var: cont

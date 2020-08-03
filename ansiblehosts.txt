@@ -1,0 +1,5 @@
+[cli]
+192.168.0.108 ansible_ssh_user=root ansible_ssh_pass=toor
+
+[aws]
+13.233.192.144 ansible_ssh_user=root ansible_ssh_pass=toor
